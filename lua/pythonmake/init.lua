@@ -3,7 +3,7 @@ local M = {}
 M.opts = { colsize = 80, verbose = true, open_qflist = true }
 
 function M.setup(opts)
-  opts = opts and opts or {}
+	opts = opts and opts or {}
 	M.opts = vim.tbl_extend("force", M.opts, opts)
 	vim.api.nvim_create_user_command("PyMake", M.make, {})
 end
@@ -22,14 +22,24 @@ function M.make()
 	local cmd = vim.fn.expandcmd(makeprg)
 
 	-- create/recall the output buffer
-	local output_bufnr = vim.g["mo_runner_outputbufid"]
-	if not output_bufnr then
+	local output_bufnr = vim.g["pymake_stdout_buffer"]
+
+  -- check if the output buffer still exists
+	local is_output_buffer_present = false
+	for _, w in ipairs(vim.api.nvim_list_wins()) do
+		if vim.api.nvim_win_get_buf(w) == output_bufnr then
+			is_output_buffer_present = true
+			break
+		end
+	end
+
+	if not (output_bufnr and is_output_buffer_present) then
 		local prev_win = vim.api.nvim_get_current_win()
 		vim.api.nvim_command(string.format("%svsplit", M.opts.colsize))
 		local win = vim.api.nvim_get_current_win()
 		output_bufnr = vim.api.nvim_create_buf(false, true)
 		vim.api.nvim_win_set_buf(win, output_bufnr)
-		vim.g["mo_runner_outputbufid"] = output_bufnr
+		vim.g["pymake_stdout_buffer"] = output_bufnr
 		vim.api.nvim_set_current_win(prev_win)
 	end
 	vim.api.nvim_buf_set_lines(output_bufnr, 0, -1, false, { bufname .. " output:" })
